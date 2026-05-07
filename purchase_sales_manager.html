@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e10;--surface:#18181c;--surface2:#222228;--border:#2e2e38;
+  --accent:#6ee7b7;--accent2:#f59e0b;--danger:#f87171;
+  --text:#f4f4f5;--muted:#71717a;--green:#6ee7b7;--amber:#f59e0b;
+  --font:'Syne',sans-serif;--mono:'DM Mono',monospace;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--font);min-height:100vh;font-size:14px}
+
+/* LAYOUT */
+.app{display:flex;flex-direction:column;min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:0 28px;height:60px;border-bottom:1px solid var(--border);background:var(--surface)}
+.logo{font-size:18px;font-weight:700;letter-spacing:-0.5px;color:var(--accent)}
+.logo span{color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.conn-badge{display:flex;align-items:center;gap:6px;font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);cursor:pointer;background:var(--surface2);color:var(--muted);transition:all .2s}
+.conn-badge.connected{border-color:#6ee7b730;color:var(--green);background:#6ee7b710}
+.conn-badge .dot{width:7px;height:7px;border-radius:50%;background:currentColor}
+.main{display:flex;flex:1}
+.sidebar{width:200px;border-right:1px solid var(--border);padding:20px 0;background:var(--surface)}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;border-left:2px solid transparent;transition:all .15s}
+.nav-item:hover{color:var(--text);background:var(--surface2)}
+.nav-item.active{color:var(--accent);border-left-color:var(--accent);background:#6ee7b708}
+.nav-item i{font-size:16px}
+.content{flex:1;padding:28px;overflow:auto}
+
+/* CARDS */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px}
+.stat-label{font-size:11px;color:var(--muted);letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px}
+.stat-val{font-size:24px;font-weight:700;font-family:var(--mono)}
+.stat-val.green{color:var(--green)}
+.stat-val.amber{color:var(--amber)}
+
+/* PAGE HEADER */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.page-title{font-size:20px;font-weight:700}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-family:var(--font);font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s}
+.btn-primary{background:var(--accent);color:#0e0e10}
+.btn-primary:hover{background:#a7f3d0}
+.btn-danger{background:#f8717120;color:var(--danger);border:1px solid #f8717130}
+.btn-danger:hover{background:#f8717130}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--surface2);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:12px}
+
+/* TABLE */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.table-toolbar{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid var(--border)}
+.search-box{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:6px 12px;flex:1;max-width:280px}
+.search-box input{background:transparent;border:none;color:var(--text);font-family:var(--font);font-size:13px;outline:none;width:100%}
+.search-box input::placeholder{color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+thead{background:var(--surface2)}
+th{text-align:left;padding:10px 14px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid #1e1e26;font-size:13px;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#ffffff04}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.badge-purchase{background:#3b82f620;color:#93c5fd}
+.badge-sales{background:#6ee7b720;color:var(--green)}
+.actions{display:flex;gap:6px}
+.empty-state{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty-state i{font-size:36px;display:block;margin-bottom:10px;opacity:.4}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:#00000080;display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(3px)}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:14px;width:520px;max-width:96vw;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px #00000060}
+.modal-header{display:flex;align-items:center;justify-content:space-between;padding:20px 24px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;line-height:1;padding:4px}
+.modal-close:hover{color:var(--text)}
+.modal-body{padding:24px}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
+
+/* FORM */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.04em;text-transform:uppercase}
+input[type=text],input[type=number],input[type=date],select{background:var(--surface2);border:1px solid var(--border);border-radius:7px;color:var(--text);font-family:var(--font);font-size:13px;padding:9px 12px;outline:none;transition:border .15s;width:100%}
+input:focus,select:focus{border-color:var(--accent)}
+select option{background:var(--surface2)}
+
+/* SETUP PANEL */
+.setup-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:32px;max-width:540px;margin:0 auto}
+.setup-title{font-size:20px;font-weight:700;margin-bottom:8px}
+.setup-sub{color:var(--muted);font-size:13px;margin-bottom:28px;line-height:1.6}
+.step{display:flex;gap:14px;margin-bottom:22px;padding-bottom:22px;border-bottom:1px solid var(--border)}
+.step:last-of-type{border-bottom:none}
+.step-num{width:28px;height:28px;border-radius:50%;background:var(--accent);color:#0e0e10;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.step-body{flex:1}
+.step-label{font-weight:600;margin-bottom:6px;font-size:14px}
+.step-desc{color:var(--muted);font-size:12px;line-height:1.6;margin-bottom:10px}
+.code-box{background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:12px;color:var(--accent);word-break:break-all}
+
+/* TOAST */
+.toast{position:fixed;bottom:28px;right:28px;padding:12px 18px;border-radius:8px;font-size:13px;font-weight:500;z-index:999;transform:translateY(80px);opacity:0;transition:all .25s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{background:#6ee7b7;color:#0e0e10}
+.toast.error{background:#f87171;color:#fff}
+
+/* TABS */
+.tab-row{display:flex;gap:2px;background:var(--surface2);border-radius:8px;padding:3px;width:fit-content;margin-bottom:20px}
+.tab{padding:7px 18px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;color:var(--muted);transition:all .15s}
+.tab.active{background:var(--surface);color:var(--text)}
+
+/* AMOUNT */
+.mono{font-family:var(--mono)}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">ledger<span>.</span></div>
+  <div class="topbar-right">
+    <div class="conn-badge" id="connBadge" onclick="showSetup()">
+      <span class="dot"></span>
+      <span id="connLabel">Not connected</span>
+    </div>
+    <button class="btn btn-ghost btn-sm" onclick="showSetup()"><i class="ti ti-settings" aria-hidden="true"></i> Setup</button>
+  </div>
+</div>
+
+<div class="main">
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard"><i class="ti ti-layout-dashboard" aria-hidden="true"></i> Dashboard</div>
+  <div class="nav-item" onclick="switchTab('purchases')" id="nav-purchases"><i class="ti ti-arrow-down-circle" aria-hidden="true"></i> Purchases</div>
+  <div class="nav-item" onclick="switchTab('sales')" id="nav-sales"><i class="ti ti-arrow-up-circle" aria-hidden="true"></i> Sales</div>
+</div>
+
+<!-- CONTENT -->
+<div class="content" id="mainContent">
+  <div id="page-dashboard">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Total Purchases</div><div class="stat-val amber" id="stat-purchases">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Sales</div><div class="stat-val green" id="stat-sales">—</div></div>
+      <div class="stat-card"><div class="stat-label">Net Profit</div><div class="stat-val" id="stat-profit">—</div></div>
+      <div class="stat-card"><div class="stat-label">Total Entries</div><div class="stat-val" id="stat-entries">—</div></div>
+    </div>
+    <div class="page-header"><div class="page-title">Recent Activity</div></div>
+    <div class="table-wrap" id="dashboard-table-wrap">
+      <div class="loading"><div class="spinner"></div><br>Connect Google Sheets to load data</div>
+    </div>
+  </div>
+
+  <div id="page-purchases" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Purchases</div>
+      <button class="btn btn-primary" onclick="openModal('purchase')"><i class="ti ti-plus" aria-hidden="true"></i> Add Purchase</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box"><i class="ti ti-search" style="color:var(--muted);font-size:15px" aria-hidden="true"></i><input type="text" placeholder="Search purchases…" oninput="filterTable('purchases',this.value)"></div>
+        <button class="btn btn-ghost btn-sm" onclick="loadSheetData()"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
+      </div>
+      <div id="purchases-table-body"><div class="empty-state"><i class="ti ti-inbox"></i>No purchase records yet</div></div>
+    </div>
+  </div>
+
+  <div id="page-sales" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Sales</div>
+      <button class="btn btn-primary" onclick="openModal('sales')"><i class="ti ti-plus" aria-hidden="true"></i> Add Sale</button>
+    </div>
+    <div class="table-wrap">
+      <div class="table-toolbar">
+        <div class="search-box"><i class="ti ti-search" style="color:var(--muted);font-size:15px" aria-hidden="true"></i><input type="text" placeholder="Search sales…" oninput="filterTable('sales',this.value)"></div>
+        <button class="btn btn-ghost btn-sm" onclick="loadSheetData()"><i class="ti ti-refresh" aria-hidden="true"></i> Refresh</button>
+      </div>
+      <div id="sales-table-body"><div class="empty-state"><i class="ti ti-inbox"></i>No sales records yet</div></div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- SETUP MODAL -->
+<div class="modal-overlay" id="setupModal" style="display:none">
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title">Google Sheets Setup</div>
+    <button class="modal-close" onclick="closeSetup()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="setup-card" style="border:none;padding:0;max-width:100%">
+      <p class="setup-sub">Connect your Google Sheet to start managing purchases and sales. You'll need a Google API key and your Spreadsheet ID.</p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-label">Get a Google API Key</div>
+          <div class="step-desc">Go to <strong>console.cloud.google.com</strong> → APIs & Services → Credentials → Create API Key. Enable the <strong>Google Sheets API</strong> for your project.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-label">Find your Spreadsheet ID</div>
+          <div class="step-desc">Open your Google Sheet. The ID is in the URL between /d/ and /edit:</div>
+          <div class="code-box">docs.google.com/spreadsheets/d/<span style="color:var(--amber)">YOUR_ID_HERE</span>/edit</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-label">Sheet names</div>
+          <div class="step-desc">Enter the exact tab names for your purchases and sales sheets (e.g. "Purchases" and "Sales")</div>
+        </div>
+      </div>
+      <div class="form-grid" style="margin-top:8px">
+        <div class="form-group full"><label>Google API Key</label><input type="text" id="cfg-apikey" placeholder="AIzaSy…"></div>
+        <div class="form-group full"><label>Spreadsheet ID</label><input type="text" id="cfg-sheetid" placeholder="1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms"></div>
+        <div class="form-group"><label>Purchase Sheet Name</label><input type="text" id="cfg-purchase-sheet" value="Purchases"></div>
+        <div class="form-group"><label>Sales Sheet Name</label><input type="text" id="cfg-sales-sheet" value="Sales"></div>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeSetup()">Cancel</button>
+    <button class="btn btn-primary" onclick="saveConfig()"><i class="ti ti-plug" aria-hidden="true"></i> Connect</button>
+  </div>
+</div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div class="modal-overlay" id="entryModal" style="display:none">
+<div class="modal">
+  <div class="modal-header">
+    <div class="modal-title" id="entryModalTitle">Add Purchase</div>
+    <button class="modal-close" onclick="closeModal()"><i class="ti ti-x"></i></button>
+  </div>
+  <div class="modal-body">
+    <div class="form-grid">
+      <div class="form-group"><label>Date</label><input type="date" id="f-date"></div>
+      <div class="form-group"><label>Vendor / Customer</label><input type="text" id="f-vendor" placeholder="Name"></div>
+      <div class="form-group full"><label>Item</label><input type="text" id="f-item" placeholder="Item name or description"></div>
+      <div class="form-group"><label>Quantity</label><input type="number" id="f-qty" placeholder="0" min="0" step="any"></div>
+      <div class="form-group"><label>Rate (per unit)</label><input type="number" id="f-rate" placeholder="0.00" min="0" step="any" oninput="calcAmount()"></div>
+      <div class="form-group full"><label>Amount (auto-calculated)</label><input type="number" id="f-amount" placeholder="0.00" step="any" style="background:var(--bg)"></div>
+    </div>
+    <p style="font-size:11px;color:var(--muted);margin-top:12px"><i class="ti ti-info-circle" aria-hidden="true"></i> Amount = Qty × Rate. You can also override it manually.</p>
+    <div id="f-row-hint" style="display:none;font-size:12px;color:var(--muted);margin-top:10px">Editing row <span id="f-row-num"></span></div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="entrySubmitBtn" onclick="submitEntry()"><i class="ti ti-check" aria-hidden="true"></i> Save</button>
+  </div>
+</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<script>
+let config = {apiKey:'',sheetId:'',purchaseSheet:'Purchases',salesSheet:'Sales'};
+let allData = {purchases:[],sales:[]};
+let editState = {type:null,rowIndex:null};
+let currentPage = 'dashboard';
+
+function loadConfig(){
+  try{const s=localStorage.getItem('ledger_cfg');if(s){config=JSON.parse(s);updateConnBadge(true);}}catch(e){}
+}
+
+function saveConfig(){
+  config.apiKey=document.getElementById('cfg-apikey').value.trim();
+  config.sheetId=document.getElementById('cfg-sheetid').value.trim();
+  config.purchaseSheet=document.getElementById('cfg-purchase-sheet').value.trim()||'Purchases';
+  config.salesSheet=document.getElementById('cfg-sales-sheet').value.trim()||'Sales';
+  if(!config.apiKey||!config.sheetId){showToast('Please fill in API Key and Spreadsheet ID','error');return;}
+  localStorage.setItem('ledger_cfg',JSON.stringify(config));
+  updateConnBadge(true);
+  closeSetup();
+  loadSheetData();
+  showToast('Connected! Loading data…','success');
+}
+
+function updateConnBadge(connected){
+  const b=document.getElementById('connBadge');
+  const l=document.getElementById('connLabel');
+  if(connected){b.className='conn-badge connected';l.textContent='Connected';}
+  else{b.className='conn-badge';l.textContent='Not connected';}
+}
+
+function showSetup(){
+  document.getElementById('cfg-apikey').value=config.apiKey||'';
+  document.getElementById('cfg-sheetid').value=config.sheetId||'';
+  document.getElementById('cfg-purchase-sheet').value=config.purchaseSheet||'Purchases';
+  document.getElementById('cfg-sales-sheet').value=config.salesSheet||'Sales';
+  document.getElementById('setupModal').style.display='flex';
+}
+function closeSetup(){document.getElementById('setupModal').style.display='none';}
+
+async function loadSheetData(){
+  if(!config.apiKey||!config.sheetId){return;}
+  try{
+    const [pRes,sRes]=await Promise.all([
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(config.purchaseSheet)}?key=${config.apiKey}`),
+      fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(config.salesSheet)}?key=${config.apiKey}`)
+    ]);
+    const pData=await pRes.json();
+    const sData=await sRes.json();
+    if(pData.error){showToast('Purchases sheet error: '+pData.error.message,'error');return;}
+    if(sData.error){showToast('Sales sheet error: '+sData.error.message,'error');return;}
+    const parseRows=(data)=>{
+      const rows=data.values||[];
+      if(rows.length<2)return[];
+      return rows.slice(1).map((r,i)=>({row:i+2,date:r[0]||'',vendor:r[1]||'',item:r[2]||'',qty:r[3]||'',rate:r[4]||'',amount:r[5]||''}));
+    };
+    allData.purchases=parseRows(pData);
+    allData.sales=parseRows(sData);
+    renderAll();
+    showToast('Data loaded','success');
+  }catch(e){showToast('Network error: '+e.message,'error');}
+}
+
+function renderAll(){
+  renderTable('purchases',allData.purchases);
+  renderTable('sales',allData.sales);
+  renderDashboard();
+}
+
+function renderTable(type,rows){
+  const el=document.getElementById(type+'-table-body');
+  if(!rows.length){el.innerHTML='<div class="empty-state"><i class="ti ti-inbox"></i>No records yet</div>';return;}
+  el.innerHTML=`<table><thead><tr><th>Date</th><th>${type==='purchases'?'Vendor':'Customer'}</th><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th><th>Actions</th></tr></thead><tbody>${rows.map(r=>`
+    <tr>
+      <td class="mono">${r.date}</td>
+      <td>${r.vendor}</td>
+      <td>${r.item}</td>
+      <td class="mono">${r.qty}</td>
+      <td class="mono">${formatNum(r.rate)}</td>
+      <td class="mono" style="color:${type==='sales'?'var(--green)':'var(--amber)'}">${formatNum(r.amount)}</td>
+      <td><div class="actions">
+        <button class="btn btn-ghost btn-sm" onclick="editRow('${type}',${r.row})"><i class="ti ti-edit" aria-hidden="true"></i></button>
+        <button class="btn btn-danger btn-sm" onclick="deleteRow('${type}',${r.row})"><i class="ti ti-trash" aria-hidden="true"></i></button>
+      </div></td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function renderDashboard(){
+  const sumAmt=(rows)=>rows.reduce((a,r)=>a+(parseFloat(r.amount)||0),0);
+  const tp=sumAmt(allData.purchases),ts=sumAmt(allData.sales),profit=ts-tp;
+  document.getElementById('stat-purchases').textContent=fmtCurrency(tp);
+  document.getElementById('stat-sales').textContent=fmtCurrency(ts);
+  const pe=document.getElementById('stat-profit');
+  pe.textContent=fmtCurrency(profit);
+  pe.style.color=profit>=0?'var(--green)':'var(--danger)';
+  document.getElementById('stat-entries').textContent=allData.purchases.length+allData.sales.length;
+
+  const recent=[...allData.purchases.map(r=>({...r,type:'purchase'})),...allData.sales.map(r=>({...r,type:'sales'}))].slice(-10).reverse();
+  const wrap=document.getElementById('dashboard-table-wrap');
+  if(!recent.length){wrap.innerHTML='<div class="loading">No data loaded yet. Connect and refresh.</div>';return;}
+  wrap.innerHTML=`<table><thead><tr><th>Type</th><th>Date</th><th>Vendor/Customer</th><th>Item</th><th>Amount</th></tr></thead><tbody>${recent.map(r=>`
+    <tr>
+      <td><span class="badge badge-${r.type}">${r.type==='purchase'?'Purchase':'Sale'}</span></td>
+      <td class="mono">${r.date}</td>
+      <td>${r.vendor}</td>
+      <td>${r.item}</td>
+      <td class="mono" style="color:${r.type==='sales'?'var(--green)':'var(--amber)'}">${formatNum(r.amount)}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+function filterTable(type,q){
+  const filtered=allData[type+'s'||type].filter(r=>[r.date,r.vendor,r.item,r.qty,r.rate,r.amount].join(' ').toLowerCase().includes(q.toLowerCase()));
+  const key=type==='purchases'?'purchases':'sales';
+  const rows=allData[key];
+  const filtered2=rows.filter(r=>[r.date,r.vendor,r.item].join(' ').toLowerCase().includes(q.toLowerCase()));
+  renderTable(key,filtered2);
+}
+
+function fmtCurrency(n){return'₹'+n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function formatNum(v){const n=parseFloat(v);return isNaN(n)?v:n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});}
+
+function switchTab(tab){
+  ['dashboard','purchases','sales'].forEach(t=>{
+    document.getElementById('page-'+t).style.display=t===tab?'':'none';
+    document.getElementById('nav-'+t).className='nav-item'+(t===tab?' active':'');
+  });
+  currentPage=tab;
+}
+
+function openModal(type,rowData){
+  editState={type,rowIndex:null};
+  document.getElementById('entryModalTitle').textContent=type==='purchase'?'Add Purchase':'Add Sale';
+  document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  document.getElementById('f-vendor').value='';
+  document.getElementById('f-item').value='';
+  document.getElementById('f-qty').value='';
+  document.getElementById('f-rate').value='';
+  document.getElementById('f-amount').value='';
+  document.getElementById('f-row-hint').style.display='none';
+  document.getElementById('entryModal').style.display='flex';
+}
+
+function editRow(type,rowNum){
+  const rows=allData[type==='purchases'?'purchases':'sales'];
+  const r=rows.find(x=>x.row===rowNum);
+  if(!r)return;
+  editState={type:type==='purchases'?'purchase':'sales',rowIndex:rowNum};
+  document.getElementById('entryModalTitle').textContent='Edit '+(type==='purchases'?'Purchase':'Sale');
+  document.getElementById('f-date').value=r.date;
+  document.getElementById('f-vendor').value=r.vendor;
+  document.getElementById('f-item').value=r.item;
+  document.getElementById('f-qty').value=r.qty;
+  document.getElementById('f-rate').value=r.rate;
+  document.getElementById('f-amount').value=r.amount;
+  document.getElementById('f-row-hint').style.display='block';
+  document.getElementById('f-row-num').textContent=rowNum;
+  document.getElementById('entryModal').style.display='flex';
+}
+
+function closeModal(){document.getElementById('entryModal').style.display='none';}
+
+function calcAmount(){
+  const qty=parseFloat(document.getElementById('f-qty').value)||0;
+  const rate=parseFloat(document.getElementById('f-rate').value)||0;
+  if(qty&&rate)document.getElementById('f-amount').value=(qty*rate).toFixed(2);
+}
+
+async function submitEntry(){
+  const d=document.getElementById('f-date').value;
+  const v=document.getElementById('f-vendor').value.trim();
+  const it=document.getElementById('f-item').value.trim();
+  const q=document.getElementById('f-qty').value;
+  const r=document.getElementById('f-rate').value;
+  const a=document.getElementById('f-amount').value;
+  if(!d||!v||!it||!q||!a){showToast('Please fill all fields','error');return;}
+  if(!config.apiKey||!config.sheetId){showToast('Not connected to Google Sheets','error');return;}
+
+  const sheetName=editState.type==='purchase'?config.purchaseSheet:config.salesSheet;
+  const values=[[d,v,it,q,r,a]];
+
+  try{
+    let url,method,body;
+    if(editState.rowIndex){
+      const range=`${sheetName}!A${editState.rowIndex}:F${editState.rowIndex}`;
+      url=`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(range)}?valueInputOption=USER_ENTERED&key=${config.apiKey}`;
+      method='PUT';body=JSON.stringify({range,majorDimension:'ROWS',values});
+    }else{
+      const range=`${sheetName}!A:F`;
+      url=`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}/values/${encodeURIComponent(range)}:append?valueInputOption=USER_ENTERED&key=${config.apiKey}`;
+      method='POST';body=JSON.stringify({range,majorDimension:'ROWS',values});
+    }
+    const res=await fetch(url,{method,headers:{'Content-Type':'application/json'},body});
+    const json=await res.json();
+    if(json.error){showToast('Sheets error: '+json.error.message,'error');return;}
+    closeModal();
+    showToast(editState.rowIndex?'Entry updated!':'Entry added!','success');
+    await loadSheetData();
+  }catch(e){showToast('Error: '+e.message,'error');}
+}
+
+async function deleteRow(type,rowNum){
+  if(!confirm('Delete this entry from Google Sheets?'))return;
+  if(!config.apiKey||!config.sheetId){showToast('Not connected','error');return;}
+  const sheetName=type==='purchases'?config.purchaseSheet:config.salesSheet;
+  try{
+    const metaRes=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}?key=${config.apiKey}`);
+    const meta=await metaRes.json();
+    const sheet=meta.sheets.find(s=>s.properties.title===sheetName);
+    if(!sheet){showToast('Sheet not found','error');return;}
+    const sheetId=sheet.properties.sheetId;
+    const res=await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${config.sheetId}:batchUpdate?key=${config.apiKey}`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{deleteDimension:{range:{sheetId,dimension:'ROWS',startIndex:rowNum-1,endIndex:rowNum}}}]})
+    });
+    const json=await res.json();
+    if(json.error){showToast('Delete error: '+json.error.message,'error');return;}
+    showToast('Entry deleted','success');
+    await loadSheetData();
+  }catch(e){showToast('Error: '+e.message,'error');}
+}
+
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type;
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+document.getElementById('f-qty').addEventListener('input',calcAmount);
+loadConfig();
+if(config.apiKey&&config.sheetId)loadSheetData();
+</script>
+</body>
+</html>
